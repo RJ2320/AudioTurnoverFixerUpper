@@ -1,4 +1,4 @@
-# RollPull — EDL Sound Roll Conformer
+# AudioFixer — EDL Sound Roll Conformer
 
 A small desktop app that rewrites a picture-edit EDL's **Roll Name** field
 using the **Sound Roll** metadata read from each referenced production WAV.
