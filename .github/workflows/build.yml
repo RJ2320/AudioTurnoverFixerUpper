@@ -1,0 +1,102 @@
+name: Build AudioTurnoverFixerupper
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: AudioTurnoverFixerupper-windows
+            artifact_path: dist/AudioTurnoverFixerupper.exe
+            pyinstaller_args: --onefile --windowed
+          - os: macos-latest          # Apple Silicon runner
+            artifact_name: AudioTurnoverFixerupper-macos-arm64
+            artifact_path: dist/AudioTurnoverFixerupper.app
+            pyinstaller_args: --windowed
+          - os: macos-13              # Intel runner
+            artifact_name: AudioTurnoverFixerupper-macos-x86_64
+            artifact_path: dist/AudioTurnoverFixerupper.app
+            pyinstaller_args: --windowed
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PySide6 wavinfo pyinstaller
+
+      - name: Build
+        run: >
+          pyinstaller --noconfirm
+          ${{ matrix.pyinstaller_args }}
+          --name AudioTurnoverFixerupper
+          --collect-submodules wavinfo
+          --collect-data wavinfo
+          edl_sound_roll_gui.py
+
+      - name: Wrap .app into .dmg (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          STAGING=$(mktemp -d)
+          cp -R dist/AudioTurnoverFixerupper.app "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          hdiutil create -volname AudioTurnoverFixerupper \
+            -srcfolder "$STAGING" -ov -format UDZO \
+            dist/AudioTurnoverFixerupper.dmg
+          rm -rf "$STAGING"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_path }}
+            dist/AudioTurnoverFixerupper.dmg
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip Mac .app bundles
+        run: |
+          cd artifacts
+          for d in AudioTurnoverFixerupper-macos-*; do
+            if [ -d "$d/AudioTurnoverFixerupper.app" ]; then
+              (cd "$d" && zip -ry "../${d}.zip" AudioTurnoverFixerupper.app)
+            fi
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/AudioTurnoverFixerupper-windows/AudioTurnoverFixerupper.exe
+            artifacts/AudioTurnoverFixerupper-macos-arm64/AudioTurnoverFixerupper.dmg
+            artifacts/AudioTurnoverFixerupper-macos-x86_64/AudioTurnoverFixerupper.dmg
+            artifacts/AudioTurnoverFixerupper-macos-arm64.zip
+            artifacts/AudioTurnoverFixerupper-macos-x86_64.zip
+          generate_release_notes: true

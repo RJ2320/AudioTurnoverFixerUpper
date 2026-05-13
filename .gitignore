@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.venv-mac/
+*.egg-info/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Local exploration / scratch scripts
+_*.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.claude/
