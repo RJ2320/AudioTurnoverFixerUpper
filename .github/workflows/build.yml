@@ -18,12 +18,13 @@ jobs:
             artifact_name: AudioTurnoverFixerupper-windows
             artifact_path: dist/AudioTurnoverFixerupper.exe
             pyinstaller_args: --onefile --windowed
-          - os: macos-latest          # Apple Silicon runner
+          - os: macos-latest          # Apple Silicon runner. Intel Macs
+                                      # run this binary via Rosetta 2; we
+                                      # dropped the dedicated macos-13
+                                      # (Intel) matrix entry because that
+                                      # runner pool is starved and jobs
+                                      # were timing out after 24h.
             artifact_name: AudioTurnoverFixerupper-macos-arm64
-            artifact_path: dist/AudioTurnoverFixerupper.app
-            pyinstaller_args: --windowed
-          - os: macos-13              # Intel runner
-            artifact_name: AudioTurnoverFixerupper-macos-x86_64
             artifact_path: dist/AudioTurnoverFixerupper.app
             pyinstaller_args: --windowed
 
@@ -96,7 +97,5 @@ jobs:
           files: |
             artifacts/AudioTurnoverFixerupper-windows/AudioTurnoverFixerupper.exe
             artifacts/AudioTurnoverFixerupper-macos-arm64/AudioTurnoverFixerupper.dmg
-            artifacts/AudioTurnoverFixerupper-macos-x86_64/AudioTurnoverFixerupper.dmg
             artifacts/AudioTurnoverFixerupper-macos-arm64.zip
-            artifacts/AudioTurnoverFixerupper-macos-x86_64.zip
           generate_release_notes: true
